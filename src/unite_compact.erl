@@ -20,7 +20,8 @@
     start = current_time(),
     cases = [],
     profile = false,
-    profile_max = 10
+    profile_max = 10,
+    descriptions = #{}
 }).
 
 %--- Macros --------------------------------------------------------------------
@@ -49,11 +50,18 @@ init(Options) ->
             #s{profile = true, profile_max = Max}
     end.
 
-handle_begin(_Type, _Data, State) ->
-    io:format("Type ~p~n",[_Type]),
-    io:format("Data ~p~n",[_Data]),
-    io:format("State ~p~n",[State]),
-    State.
+
+handle_begin(_Type, Data, State) ->
+    case proplists:get_value(desc, Data, undefined) of
+        undefined ->
+            % io:format("Type ~p~n",[_Type]),
+            % io:format("Data ~p~n",[Data]),
+            % io:format("State ~p~n",[State]),
+            State;
+        Desc ->
+            ID = proplists:get_value(id, Data, undefined),
+            State#s{descriptions = maps:put(ID, Desc, State#s.descriptions)}
+    end.
 
 handle_end(test, Data, State) ->
     case get(status, Data) of
@@ -62,7 +70,7 @@ handle_end(test, Data, State) ->
         {skipped, _ } -> format(color:yellow("S"));
         {error, _}    -> format(color:redb("F"))
     end,
-    State#s{cases = State#s.cases ++ [Data]};
+    State#s{cases = [Data|State#s.cases]};
 handle_end(group, _Data, State) ->
     State.
 
@@ -102,22 +110,24 @@ terminate({ok, Result}, #s{cases = Cases} = State) ->
         end,
         Cases
     ),
-    print_failures(Grouped),
+    Descriptions = State#s.descriptions,
+    print_failures(Grouped, Descriptions),
     print_times(State),
     print_summary(Result, State, Grouped).
 
 %--- Internal Functions -------------------------------------------------------
 
-print_failures(#{failed := Failures}) ->
+print_failures(#{failed := Failures}, Descriptions) ->
     Indexed = lists:zip(lists:seq(1, length(Failures)), Failures),
-    [print_failure(I, F) || {I, F} <- Indexed],
+    [print_failure(I, F, Descriptions) || {I, F} <- Indexed],
     format("~n");
-print_failures(_Cases) ->
+print_failures(_Cases, _Descriptions) ->
     ok.
 
 % Individual Test Case
 
-print_failure(Index, Failure) ->
+print_failure(Index, Failure, Descriptions) ->
+    io:format("Failure ~p:~n", [Failure]),
     Reason = get(reason, Failure),
     Info = get(status, Failure, Reason),
 
