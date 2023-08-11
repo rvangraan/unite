@@ -124,15 +124,37 @@ print_failures(#{failed := Failures}, Descriptions) ->
 print_failures(_Cases, _Descriptions) ->
     ok.
 
+
+first_n_chars_of_string(N, String) ->
+    case string:length(String) > N of
+        true ->
+            string:substr(String, 1, N);
+        false ->
+            String
+    end.    
+
+get_descriptions([], _Descriptions, Result) ->
+    Result;
+get_descriptions(ID, Descriptions, Result) ->    
+    Parent = first_n_chars_of_string(length(ID)-1, ID),
+    case Descriptions of
+        #{Parent := Description} ->
+            get_descriptions(Parent, Descriptions, [Description | Result]);
+        #{} ->
+            get_descriptions(Parent, Descriptions, Result)
+    end.
+
 % Individual Test Case
 
 print_failure(Index, Failure, Descriptions) ->
-    io:format("Failure ~p:~n", [Failure]),
+    ID = proplists:get_value(id, Failure, undefined),
+    ParentDescriptions = get_descriptions(ID, Descriptions, []),
     Reason = get(reason, Failure),
     Info = get(status, Failure, Reason),
 
     {Header, Details} = format_info(Failure, Info),
     format("~n~n ~p) ~s~n", [Index, Header]),
+    [ format(ioindent(6, [ color:whiteb("Context: "), Context, "\n"])) || Context <- ParentDescriptions],
     format(ioindent(4, Details)),
     case format_output(Failure) of
         undefined -> ok;
