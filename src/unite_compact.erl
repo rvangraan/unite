@@ -50,6 +50,8 @@ init(Options) ->
     end.
 
 handle_begin(_Type, _Data, State) ->
+    io:format("Type ~p~n",[_Type]),
+    io:format("Data ~p~n",[_Data]),
     State.
 
 handle_end(test, Data, State) ->
