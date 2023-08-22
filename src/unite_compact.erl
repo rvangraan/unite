@@ -533,5 +533,5 @@ escape_exception(String) ->
 
 group_by(Fun, List) ->
     lists:foldl(fun(Item, Acc) ->
-        maps:update_with(Fun(Item), fun(Items) -> Items ++ [Item] end, [Item], Acc)
+        maps:update_with(Fun(Item), fun(Items) -> [Item|Items] end, [Item], Acc)
     end, #{}, List).
