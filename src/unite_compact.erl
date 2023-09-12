@@ -103,6 +103,7 @@ terminate({ok, Result}, #s{cases = Cases} = State) ->
                     succesful;
                 _Status  ->
                     case get(reason, C) of
+                        timeout -> failed;
                         {abort, _} -> failed;
                         {blame, _Case} -> blamed
                     end
