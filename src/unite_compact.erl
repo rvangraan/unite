@@ -162,6 +162,28 @@ print_failure(Index, Failure, Descriptions) ->
         Output    -> format("~n~s", [ioindent(4, Output)])
     end.
 
+format_info(Failure, timeout) ->    
+    case lists:keyfind(reason, 1, Failure) of
+        {reason, {timeout, #{stacktrace := ST}}} ->
+            {
+                color:yellow(format_case(Failure, [])),
+                [
+                    color:yellowb("Test case timeout!"),
+                    io_lib:format("~n", []),
+                    color:yellow(format_exception(exit, killed, ST))
+                ]
+            };
+        Reason ->
+            {
+                color:yellow(format_case(Failure, [])),
+                [
+                    color:yellowb("Unknown EUnit error!"),
+                    io_lib:format("~n", []),
+                    color:red(io_lib:format("Reason: ~p", [Reason]))
+                ]
+            }
+    end;
+
 format_info(Failure, {error, {error, {assert, Info}, ST}}) ->
     Expr = get(expression, Info),
     {
@@ -304,7 +326,7 @@ format_info(Failure, {cancelled, undefined}) ->
                 [
                     color:yellowb("Unknown EUnit error!"),
                     io_lib:format("~n", []),
-                    color:black(io_lib:format("~p", [Reason]))
+                    color:red(io_lib:format("Reason: ~p", [Reason]))
                 ]
             }
     end.
